@@ -1,0 +1,156 @@
+appId: uz.protein.app
+name: Protein.uz — showcase
+---
+- launchApp:
+    clearState: true
+    permissions:
+      location: inuse
+- extendedWaitUntil:
+    visible:
+      id: hero-cta
+    timeout: 60000
+
+- tapOn:
+    id: tab-profile
+- tapOn:
+    id: lang-ru
+- waitForAnimationToEnd
+- tapOn:
+    id: tab-home
+- extendedWaitUntil:
+    visible:
+      id: product-.*
+    timeout: 30000
+- waitForAnimationToEnd
+
+- swipe:
+    start: 50%, 80%
+    end: 50%, 40%
+    duration: 1400
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 80%
+    end: 50%, 32%
+    duration: 1400
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 80%
+    end: 50%, 32%
+    duration: 1400
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: hero-cta
+    direction: UP
+    speed: 60
+    timeout: 15000
+
+- scrollUntilVisible:
+    element:
+      id: category-protein
+    direction: DOWN
+    timeout: 10000
+- tapOn:
+    id: category-protein
+- extendedWaitUntil:
+    visible:
+      id: product-.*
+    timeout: 20000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 78%
+    end: 50%, 42%
+    duration: 1300
+- waitForAnimationToEnd
+
+- tapOn:
+    id: product-.*
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: add-to-cart
+    timeout: 20000
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 72%
+    end: 50%, 28%
+    duration: 1500
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 30%
+    end: 50%, 88%
+    duration: 1000
+- waitForAnimationToEnd
+- tapOn:
+    id: product-qty-inc
+- tapOn:
+    id: add-to-cart
+- extendedWaitUntil:
+    visible:
+      id: in-cart-banner
+    timeout: 5000
+- waitForAnimationToEnd
+- tapOn:
+    id: in-cart-banner
+
+- scrollUntilVisible:
+    element:
+      id: checkout-button
+    direction: DOWN
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn:
+    id: checkout-button
+- extendedWaitUntil:
+    visible:
+      id: checkout-name
+    timeout: 20000
+- waitForAnimationToEnd
+- tapOn:
+    id: checkout-name
+- inputText: Aziz
+- tapOn:
+    id: checkout-phone
+- inputText: '901234567'
+- hideKeyboard
+- scrollUntilVisible:
+    element:
+      id: locate-me
+    direction: DOWN
+    centerElement: true
+    timeout: 10000
+- tapOn:
+    id: locate-me
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: checkout-submit
+    direction: DOWN
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn:
+    id: checkout-close
+
+- repeat:
+    while:
+      visible:
+        id: qty-.*-dec
+    commands:
+      - tapOn:
+          id: qty-.*-dec
+- waitForAnimationToEnd
+
+- tapOn:
+    id: tab-profile
+- tapOn:
+    id: lang-uz
+- waitForAnimationToEnd
+- tapOn:
+    id: lang-en
+- waitForAnimationToEnd
+- tapOn:
+    id: lang-ru
+- waitForAnimationToEnd
+- tapOn:
+    id: tab-home
+- waitForAnimationToEnd

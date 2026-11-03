@@ -76,7 +76,7 @@
   </section>
   <section class="right">
     <div class="panel"><h2>Этапы</h2><div class="steps" id="steps"></div></div>
-    <div class="panel" id="video-panel" hidden><h2>Видео прогона · iPhone 16</h2><video id="video" controls playsinline></video></div>
+    <div class="panel" id="video-panel" hidden><h2 id="video-title">Видео</h2><video id="video" controls playsinline></video></div>
     <div class="panel"><h2>Живой лог</h2><pre id="log"></pre></div>
     <div class="panel"><h2>Скриншоты теста</h2><div id="gallery"><div class="empty">Появятся, когда тест начнёт проходить экраны</div></div></div>
   </section>
@@ -84,10 +84,10 @@
 <div class="lightbox" id="lightbox"><img alt="" /></div>
 <script>
   const STAGES = [
-    ['setup', 'Подготовка'], ['deps', 'Зависимости'], ['prebuild', 'iOS-проект'], ['build', 'Сборка'],
+    ['setup', 'Подготовка'], ['deps', 'Зависимости'], ['prebuild', 'iOS-проект'], ['build', 'Сборка'], ['showcase', 'Демо-ролик'],
     ['iphone-16', 'iPhone 16'], ['iphone-se', 'iPhone SE'], ['iphone-16-pro-max', 'iPhone 16 Pro Max'], ['done', 'Готово'],
   ];
-  const DEVICES = { 'iphone-16': 'iPhone 16', 'iphone-se': 'iPhone SE (3-го поколения)', 'iphone-16-pro-max': 'iPhone 16 Pro Max' };
+  const DEVICES = { showcase: 'iPhone 16 · демо-ролик', 'iphone-16': 'iPhone 16', 'iphone-se': 'iPhone SE (3-го поколения)', 'iphone-16-pro-max': 'iPhone 16 Pro Max' };
   const $ = (id) => document.getElementById(id);
   let status = { stage: 'setup' };
   let startedAt = null;
@@ -119,7 +119,7 @@
       const device = DEVICES[status.stage];
       $('device').innerHTML = device ? `${device}<span>${status.detail || 'идёт тест'}</span>` : `Симулятор<span>${finished ? 'прогон завершён' : 'ожидание сборки'}</span>`;
       renderSteps();
-      if (finished) showVideo();
+      showVideo();
     } catch {}
   }
 
@@ -175,14 +175,23 @@
     } catch {}
   }
 
-  let videoShown = false;
+  let videoShown = '';
+  let videoCheckAt = 0;
   async function showVideo() {
-    if (videoShown) return;
-    const res = await fetch('preview/iphone-16.mp4', { method: 'HEAD' }).catch(() => null);
-    if (!res || !res.ok) return;
-    videoShown = true;
-    $('video').src = 'preview/iphone-16.mp4';
-    $('video-panel').hidden = false;
+    if (videoShown === 'showcase' || Date.now() - videoCheckAt < 5000) return;
+    videoCheckAt = Date.now();
+    const candidates = [['preview/showcase.mp4', 'Демо-ролик · iPhone 16', 'showcase']];
+    if (status.stage === 'done') candidates.push(['preview/iphone-16.mp4', 'Запись теста · iPhone 16', 'test']);
+    for (const [src, title, kind] of candidates) {
+      if (videoShown === kind) return;
+      const res = await fetch(src, { method: 'HEAD', cache: 'no-store' }).catch(() => null);
+      if (!res || !res.ok) continue;
+      videoShown = kind;
+      $('video').src = src;
+      $('video-title').textContent = title;
+      $('video-panel').hidden = false;
+      return;
+    }
   }
 
   document.addEventListener('click', (event) => {

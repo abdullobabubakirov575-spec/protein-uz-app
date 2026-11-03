@@ -109,6 +109,7 @@ jobs:
             --body "Живая страница прогона: $URL" | grep -oE '[0-9]+$' || true)
           echo "LIVE_ISSUE=$ISSUE" >> "$GITHUB_ENV"
           nohup bash .github/live/capture.sh > "$RUNNER_TEMP/capture.log" 2>&1 &
+          (command -v ffmpeg >/dev/null || brew install ffmpeg) > "$RUNNER_TEMP/ffmpeg.log" 2>&1 &
 
       - uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -169,19 +170,72 @@ jobs:
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
+      - name: Unpack simulator app
+        run: |
+          mkdir -p sim-app && ditto -x -k simulator-app.zip sim-app
+          echo "APP_PATH=$(ls -d "$PWD"/sim-app/*.app | head -n1)" >> "$GITHUB_ENV"
+          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "
+          import json, sys
+          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if r['platform'] == 'iOS' and r['isAvailable']]
+          print(sorted(runtimes, key=lambda r: [int(p) for p in r['version'].split('.')])[-1]['identifier'])")
+          echo "RUNTIME=$RUNTIME" >> "$GITHUB_ENV"
+          echo "Runtime: $RUNTIME" | tee -a "$LIVE/log.txt"
+
+      - name: Record showcase on iPhone 16
+        continue-on-error: true
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 240000
+          MAESTRO_CLI_NO_ANALYTICS: 1
+        run: |
+          source .github/live/lib.sh
+          live_stage showcase "iPhone 16" "запись демо-ролика"
+          mkdir -p preview/showcase
+          udid=$(xcrun simctl create "iPhone 16" com.apple.CoreSimulator.SimDeviceType.iPhone-16 "$RUNTIME")
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
+          xcrun simctl location "$udid" set 41.3111,69.2797
+          xcrun simctl install "$udid" "$APP_PATH"
+          xcrun simctl privacy "$udid" grant location "$BUNDLE_ID" || true
+          xcrun simctl launch "$udid" "$BUNDLE_ID" >/dev/null 2>&1 || true
+          sleep 3
+          xcrun simctl terminate "$udid" "$BUNDLE_ID" || true
+          xcrun simctl io "$udid" recordVideo --codec=h264 --force preview/showcase-raw.mp4 &
+          rec=$!
+          sleep 2
+          set -o pipefail
+          (cd preview/showcase && perl -e 'alarm shift; exec @ARGV' 600 maestro --device "$udid" test             --test-output-dir debug "$GITHUB_WORKSPACE/.maestro/showcase.yaml" 2>&1 | tee -a "$LIVE/log.txt") || live_fail showcase
+          kill -INT "$rec"
+          wait "$rec" || true
+          xcrun simctl shutdown "$udid" || true
+          xcrun simctl delete "$udid" || true
+
+      - name: Edit showcase video
+        continue-on-error: true
+        run: |
+          source .github/live/lib.sh
+          live_stage showcase "iPhone 16" "монтаж ролика"
+          for i in $(seq 1 120); do command -v ffmpeg >/dev/null && break; sleep 5; done
+          FONT=node_modules/@expo-google-fonts/oswald/700Bold/Oswald_700Bold.ttf
+          [ -f "$FONT" ] || FONT="/System/Library/Fonts/Supplemental/Arial Bold.ttf"
+          python3 .github/live/make_showcase.py preview/showcase-raw.mp4 preview/showcase.mp4 assets/icon.png "$FONT" 2>&1 | tee -a "$LIVE/log.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Protein.uz-showcase
+          path: |
+            preview/showcase.mp4
+            preview/showcase-raw.mp4
+          retention-days: 30
+          if-no-files-found: ignore
+
       - name: Run UI tests on iPhone 16, iPhone SE, iPhone 16 Pro Max
         env:
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 240000
           MAESTRO_CLI_NO_ANALYTICS: 1
         run: |
           source .github/live/lib.sh
-          mkdir -p sim-app && ditto -x -k simulator-app.zip sim-app
-          APP_PATH=$(ls -d sim-app/*.app | head -n1)
-          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "
-          import json, sys
-          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if r['platform'] == 'iOS' and r['isAvailable']]
-          print(sorted(runtimes, key=lambda r: [int(p) for p in r['version'].split('.')])[-1]['identifier'])")
-          echo "Runtime: $RUNTIME" | tee -a "$LIVE/log.txt"
           STATUS=0
 
           run_device() {
