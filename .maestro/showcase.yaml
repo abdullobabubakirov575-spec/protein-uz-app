@@ -14,30 +14,31 @@ name: Protein.uz — showcase
     id: tab-profile
 - tapOn:
     id: lang-ru
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: tab-home
-- extendedWaitUntil:
-    visible:
-      id: product-.*
-    timeout: 30000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - swipe:
     start: 50%, 80%
     end: 50%, 40%
     duration: 1400
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - swipe:
     start: 50%, 80%
     end: 50%, 32%
     duration: 1400
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - swipe:
     start: 50%, 80%
     end: 50%, 32%
     duration: 1400
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - scrollUntilVisible:
     element:
       id: hero-cta
@@ -56,12 +57,14 @@ name: Protein.uz — showcase
     visible:
       id: product-.*
     timeout: 20000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - swipe:
     start: 50%, 78%
     end: 50%, 42%
     duration: 1300
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - tapOn:
     id: product-.*
@@ -70,17 +73,20 @@ name: Protein.uz — showcase
     visible:
       id: add-to-cart
     timeout: 20000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - swipe:
     start: 50%, 72%
     end: 50%, 28%
     duration: 1500
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - swipe:
     start: 50%, 30%
     end: 50%, 88%
     duration: 1000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: product-qty-inc
 - tapOn:
@@ -89,7 +95,8 @@ name: Protein.uz — showcase
     visible:
       id: in-cart-banner
     timeout: 5000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: in-cart-banner
 
@@ -98,14 +105,16 @@ name: Protein.uz — showcase
       id: checkout-button
     direction: DOWN
     timeout: 15000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: checkout-button
 - extendedWaitUntil:
     visible:
       id: checkout-name
     timeout: 20000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: checkout-name
 - inputText: Aziz
@@ -121,13 +130,15 @@ name: Protein.uz — showcase
     timeout: 10000
 - tapOn:
     id: locate-me
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - scrollUntilVisible:
     element:
       id: checkout-submit
     direction: DOWN
     timeout: 15000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: checkout-close
 
@@ -138,19 +149,24 @@ name: Protein.uz — showcase
     commands:
       - tapOn:
           id: qty-.*-dec
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 
 - tapOn:
     id: tab-profile
 - tapOn:
     id: lang-uz
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: lang-en
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: lang-ru
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: tab-home
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000

@@ -216,17 +216,13 @@ jobs:
           source .github/live/lib.sh
           live_stage showcase "iPhone 16" "монтаж ролика"
           for i in $(seq 1 120); do command -v ffmpeg >/dev/null && break; sleep 5; done
-          FONT=node_modules/@expo-google-fonts/oswald/700Bold/Oswald_700Bold.ttf
-          [ -f "$FONT" ] || FONT="/System/Library/Fonts/Supplemental/Arial Bold.ttf"
-          python3 .github/live/make_showcase.py preview/showcase-raw.mp4 preview/showcase.mp4 assets/icon.png "$FONT" 2>&1 | tee -a "$LIVE/log.txt"
+          python3 .github/live/make_showcase.py preview/showcase-raw.mp4 preview/showcase.mp4 .github/live/title-card.png 2>&1 | tee -a "$LIVE/log.txt"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Protein.uz-showcase
-          path: |
-            preview/showcase.mp4
-            preview/showcase-raw.mp4
+          path: preview/showcase.mp4
           retention-days: 30
           if-no-files-found: ignore
 

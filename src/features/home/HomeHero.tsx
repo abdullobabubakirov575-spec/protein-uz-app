@@ -2,9 +2,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeInDown,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -18,6 +20,8 @@ import { useLocale } from '@/i18n/LocaleProvider';
 import { useAdaptiveLayout } from '@/theme/adaptive';
 import { colors } from '@/theme/colors';
 
+const CONTENT_PADDING = 22;
+
 interface HomeHeroProps {
   featured?: Product;
   onExplore: () => void;
@@ -26,21 +30,27 @@ interface HomeHeroProps {
 export function HomeHero({ featured, onExplore }: HomeHeroProps) {
   const { t } = useLocale();
   const { gutter, heroHeight, radius, contentWidth, deviceClass } = useAdaptiveLayout();
+  const reduceMotion = useReducedMotion();
   const float = useSharedValue(0);
 
   useEffect(() => {
+    if (reduceMotion) return;
     float.value = withRepeat(withTiming(1, { duration: 2600, easing: Easing.inOut(Easing.sin) }), -1, true);
-  }, [float]);
+    return () => cancelAnimation(float);
+  }, [float, reduceMotion]);
 
   const floatingStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: -8 * float.value }, { rotate: `${-9 + float.value * 3}deg` }],
+    transform: [{ translateY: -8 * float.value }, { rotate: `${-8 + float.value * 3}deg` }],
   }));
 
-  const imageSize = Math.round(Math.min(contentWidth * 0.42, deviceClass === 'tablet' ? 240 : 170));
+  const innerWidth = contentWidth - CONTENT_PADDING * 2;
+  const imageSize = Math.round(
+    deviceClass === 'tablet' ? Math.min(innerWidth * 0.3, 220) : Math.min(innerWidth * 0.36, 140),
+  );
   const showImage = Boolean(featured) && deviceClass !== 'compact';
 
   return (
-    <Animated.View entering={FadeInDown.duration(520).springify()} style={{ paddingHorizontal: gutter }}>
+    <Animated.View entering={FadeInDown.duration(520)} style={{ paddingHorizontal: gutter }}>
       <View style={[styles.card, { minHeight: heroHeight, borderRadius: radius.hero }]}>
         <LinearGradient
           colors={['#1E2A12', '#121510', colors.surface]}
@@ -49,11 +59,6 @@ export function HomeHero({ featured, onExplore }: HomeHeroProps) {
           style={StyleSheet.absoluteFill}
         />
         <View style={[styles.glow, { width: heroHeight * 1.1, height: heroHeight * 1.1, borderRadius: heroHeight }]} />
-        {showImage && featured ? (
-          <Animated.View style={[styles.floating, floatingStyle]} pointerEvents="none">
-            <ProductImage uri={featured.image} size={imageSize} radius={radius.card} padding={12} priority="high" />
-          </Animated.View>
-        ) : null}
         <View style={styles.content}>
           <View style={styles.tag}>
             <View style={styles.dot} />
@@ -61,20 +66,20 @@ export function HomeHero({ featured, onExplore }: HomeHeroProps) {
               {t.home.heroTag}
             </AppText>
           </View>
-          <AppText variant="hero" style={[styles.title, showImage && { maxWidth: contentWidth - imageSize * 0.62 }]}>
+          <AppText variant="hero" numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.55} style={styles.title}>
             {t.home.heroTitle}
           </AppText>
-          <AppText variant="callout" color={colors.textSecondary} style={[styles.subtitle, showImage && { maxWidth: contentWidth * 0.58 }]}>
-            {t.home.heroSubtitle}
-          </AppText>
-          <Button
-            testID="hero-cta"
-            label={t.home.heroCta}
-            icon="arrow.right"
-            size="md"
-            onPress={onExplore}
-            style={styles.cta}
-          />
+          <View style={styles.row}>
+            <AppText variant="callout" color={colors.textSecondary} style={styles.copy}>
+              {t.home.heroSubtitle}
+            </AppText>
+            {showImage && featured ? (
+              <Animated.View style={[styles.floating, floatingStyle]} pointerEvents="none">
+                <ProductImage uri={featured.image} size={imageSize} radius={radius.card} padding={12} priority="high" />
+              </Animated.View>
+            ) : null}
+          </View>
+          <Button testID="hero-cta" label={t.home.heroCta} icon="arrow.right" size="md" onPress={onExplore} style={styles.cta} />
         </View>
       </View>
     </Animated.View>
@@ -96,16 +101,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accentGlow,
     opacity: 0.35,
   },
-  floating: {
-    position: 'absolute',
-    right: 18,
-    top: 26,
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 14 },
-  },
-  content: { padding: 22, gap: 10 },
+  content: { padding: CONTENT_PADDING, gap: 12 },
   tag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -117,7 +113,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(150,224,74,0.12)',
   },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
-  title: { marginTop: 4 },
-  subtitle: { maxWidth: 420 },
-  cta: { alignSelf: 'flex-start', marginTop: 8 },
+  title: { marginTop: 2 },
+  row: { flexDirection: 'row', alignItems: 'flex-end', gap: 14 },
+  copy: { flex: 1, alignSelf: 'center' },
+  cta: { alignSelf: 'flex-start', marginTop: 4 },
+  floating: {
+    marginBottom: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 12 },
+  },
 });

@@ -3,16 +3,17 @@ import re
 import subprocess
 import sys
 
-RAW, OUT, ICON, FONT = sys.argv[1:5]
+RAW, OUT, TITLE = sys.argv[1:4]
 TMP = OUT + ".part.mp4"
 
 WIDTH, HEIGHT, FPS = 720, 1560, 30
-FREEZE_HOLD = 1.1
-SPEED = 1.15
-BACKGROUND = "0x0C0C0C"
+FREEZE_HOLD = 1.0
+SPEED = 1.3
+TITLE_SECONDS = 2.0
+ENCODE = ["-c:v", "libx264", "-preset", "medium", "-crf", "21", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
 
 
-def run(args: list[str]) -> subprocess.CompletedProcess:
+def ffmpeg(args: list[str]) -> subprocess.CompletedProcess:
     return subprocess.run(["ffmpeg", "-hide_banner", "-y", *args], capture_output=True, text=True)
 
 
@@ -28,7 +29,7 @@ def duration(path: str) -> float:
 
 def keep_segments(path: str) -> list[tuple[float, float]]:
     total = duration(path)
-    scan = run(["-i", path, "-vf", "freezedetect=n=0.003:d=0.9", "-map", "0:v", "-f", "null", "-"])
+    scan = ffmpeg(["-i", path, "-vf", "freezedetect=n=0.003:d=0.8", "-map", "0:v", "-f", "null", "-"])
     starts = [float(v) for v in re.findall(r"freeze_start: ([\d.]+)", scan.stderr)]
     ends = [float(v) for v in re.findall(r"freeze_end: ([\d.]+)", scan.stderr)]
     if len(ends) < len(starts):
@@ -45,7 +46,7 @@ def keep_segments(path: str) -> list[tuple[float, float]]:
     return segments
 
 
-def body_filter(segments: list[tuple[float, float]]) -> str:
+def graph(segments: list[tuple[float, float]]) -> str:
     parts = [
         f"[0:v]trim=start={start:.3f}:end={end:.3f},setpts=PTS-STARTPTS[s{i}]"
         for i, (start, end) in enumerate(segments)
@@ -53,59 +54,33 @@ def body_filter(segments: list[tuple[float, float]]) -> str:
     labels = "".join(f"[s{i}]" for i in range(len(segments)))
     parts.append(
         f"{labels}concat=n={len(segments)}:v=1:a=0,setpts=PTS/{SPEED},"
-        f"fps={FPS},scale={WIDTH}:{HEIGHT}:flags=lanczos,format=yuv420p[body]"
+        f"fps={FPS},scale={WIDTH}:{HEIGHT}:flags=lanczos,setsar=1,format=yuv420p[body]"
     )
+    fade_out = TITLE_SECONDS - 0.35
+    parts.append(
+        f"[1:v]scale={WIDTH}:{HEIGHT},fps={FPS},setsar=1,format=yuv420p,"
+        f"fade=t=in:st=0:d=0.35,fade=t=out:st={fade_out:.2f}:d=0.35[title]"
+    )
+    parts.append("[title][body]concat=n=2:v=1:a=0[out]")
     return ";".join(parts)
-
-
-def title_card(text_main: str, text_sub: str, seconds: float) -> str:
-    font = FONT.replace(":", "\\:")
-    return (
-        f"color=c={BACKGROUND}:s={WIDTH}x{HEIGHT}:r={FPS}:d={seconds}[cardbg];"
-        f"[1:v]scale=260:260,format=rgba[cardicon];"
-        f"[cardbg][cardicon]overlay=(W-w)/2:(H-h)/2-170:shortest=1,"
-        f"drawtext=fontfile='{font}':text='{text_main}':fontcolor=white:fontsize=76:x=(w-text_w)/2:y=h/2+20,"
-        f"drawtext=fontfile='{font}':text='{text_sub}':fontcolor=0x96E04A:fontsize=38:x=(w-text_w)/2:y=h/2+120,"
-        f"fade=t=in:st=0:d=0.35,fade=t=out:st={seconds - 0.35}:d=0.35,format=yuv420p"
-    )
 
 
 def render() -> None:
     segments = keep_segments(RAW)
-    print(f"segments kept: {len(segments)}, seconds: {sum(e - s for s, e in segments):.1f}")
-    graph = ";".join(
-        [
-            body_filter(segments),
-            title_card("PROTEIN.UZ", "iOS-приложение", 2.2) + "[intro]",
-            "[intro][body]concat=n=2:v=1:a=0[out]",
-        ]
-    )
-    result = run(
+    print(f"segments kept: {len(segments)}, raw seconds kept: {sum(e - s for s, e in segments):.1f}")
+    result = ffmpeg(
         [
             "-i", RAW,
-            "-loop", "1", "-i", ICON,
-            "-filter_complex", graph,
+            "-loop", "1", "-t", str(TITLE_SECONDS), "-i", TITLE,
+            "-filter_complex", graph(segments),
             "-map", "[out]",
-            "-c:v", "libx264", "-preset", "medium", "-crf", "21",
-            "-movflags", "+faststart",
+            *ENCODE,
             TMP,
         ]
     )
     if result.returncode != 0:
         print(result.stderr[-3000:])
-        fallback = run(
-            [
-                "-i", RAW,
-                "-filter_complex", body_filter(segments),
-                "-map", "[body]",
-                "-c:v", "libx264", "-preset", "medium", "-crf", "21",
-                "-movflags", "+faststart",
-                TMP,
-            ]
-        )
-        if fallback.returncode != 0:
-            print(fallback.stderr[-3000:])
-            sys.exit(1)
+        sys.exit(1)
     os.replace(TMP, OUT)
     print(f"showcase: {duration(OUT):.1f}s -> {OUT}")
 

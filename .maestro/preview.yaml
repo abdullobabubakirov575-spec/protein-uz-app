@@ -15,22 +15,26 @@ name: Protein.uz — full purchase flow
 - tapOn:
     id: lang-ru
 - assertVisible: Русский
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 01-profile-language
 
 - tapOn:
     id: tab-home
-- extendedWaitUntil:
-    visible:
-      id: product-.*
-    timeout: 30000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 02-home
+- scrollUntilVisible:
+    element:
+      id: product-.*
+    direction: DOWN
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 2000
+- takeScreenshot: 03-home-popular
 - scroll
-- waitForAnimationToEnd
-- takeScreenshot: 03-home-categories
-- scroll
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 04-home-brands
 
 - tapOn:
@@ -39,11 +43,13 @@ name: Protein.uz — full purchase flow
     visible:
       id: chip-all
     timeout: 20000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 05-catalog
 - tapOn:
     id: chip-protein
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 06-catalog-protein
 
 - tapOn:
@@ -53,7 +59,8 @@ name: Protein.uz — full purchase flow
     visible:
       id: add-to-cart
     timeout: 20000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 07-product
 - tapOn:
     id: product-qty-inc
@@ -72,7 +79,8 @@ name: Protein.uz — full purchase flow
       id: checkout-button
     direction: DOWN
     timeout: 20000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 09-cart
 
 - tapOn:
@@ -81,7 +89,8 @@ name: Protein.uz — full purchase flow
     visible:
       id: checkout-name
     timeout: 20000
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 10-checkout
 - scrollUntilVisible:
     element:
@@ -103,7 +112,8 @@ name: Protein.uz — full purchase flow
     id: checkout-phone
 - inputText: '901234567'
 - hideKeyboard
-- waitForAnimationToEnd
+- waitForAnimationToEnd:
+    timeout: 2000
 - takeScreenshot: 13-checkout-filled
 - tapOn:
     id: checkout-close
