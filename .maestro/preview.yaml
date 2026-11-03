@@ -4,7 +4,7 @@ name: Protein.uz — full purchase flow
 - launchApp:
     clearState: true
     permissions:
-      location: allow
+      location: inuse
 - extendedWaitUntil:
     visible:
       id: hero-cta
