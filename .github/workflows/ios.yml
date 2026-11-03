@@ -1,0 +1,138 @@
+name: iOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ipa:
+        description: Build unsigned IPA
+        type: boolean
+        default: true
+      preview:
+        description: Run UI tests on iPhone simulators (video + screenshots)
+        type: boolean
+        default: true
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24
+  BUNDLE_ID: uz.protein.app
+
+jobs:
+  ipa:
+    name: Unsigned IPA
+    if: github.event_name == 'push' || inputs.ipa
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx expo prebuild --platform ios
+      - name: Build
+        run: |
+          set -o pipefail
+          WORKSPACE=$(ls -d ios/*.xcworkspace | head -n1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build | xcbeautify --renderer github-actions
+          APP=$(ls -d build/Build/Products/Release-iphoneos/*.app | head -n1)
+          mkdir -p dist/Payload
+          cp -R "$APP" dist/Payload/
+          (cd dist && zip -qry ProteinUz.ipa Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Protein.uz-ipa
+          path: dist/ProteinUz.ipa
+          retention-days: 30
+
+  preview:
+    name: iPhone simulator tests
+    if: github.event_name == 'push' || inputs.preview
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npx expo prebuild --platform ios
+      - name: Build for simulator
+        run: |
+          set -o pipefail
+          WORKSPACE=$(ls -d ios/*.xcworkspace | head -n1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          xcodebuild -workspace "$WORKSPACE" -scheme "$SCHEME" -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO build | xcbeautify --renderer github-actions
+          echo "APP_PATH=$(ls -d build/Build/Products/Release-iphonesimulator/*.app | head -n1)" >> "$GITHUB_ENV"
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: Run UI tests on iPhone 16, iPhone SE, iPhone 16 Pro Max
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 240000
+          MAESTRO_CLI_NO_ANALYTICS: 1
+        run: |
+          RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "
+          import json, sys
+          runtimes = [r for r in json.load(sys.stdin)['runtimes'] if r['platform'] == 'iOS' and r['isAvailable']]
+          print(sorted(runtimes, key=lambda r: [int(p) for p in r['version'].split('.')])[-1]['identifier'])")
+          echo "Runtime: $RUNTIME"
+          mkdir -p preview
+          STATUS=0
+
+          run_device() {
+            local name="$1" type="$2" slug="$3" record="$4" udid rec=""
+            udid=$(xcrun simctl create "$name" "$type" "$RUNTIME") || { echo "::warning::$name is not available"; return 0; }
+            xcrun simctl boot "$udid"
+            xcrun simctl bootstatus "$udid" -b
+            xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged --batteryLevel 100 --cellularBars 4 --wifiBars 3
+            xcrun simctl location "$udid" set 41.3111,69.2797
+            xcrun simctl install "$udid" "$APP_PATH"
+            xcrun simctl privacy "$udid" grant location "$BUNDLE_ID" || true
+            mkdir -p "preview/$slug"
+            if [ "$record" = "1" ]; then
+              xcrun simctl io "$udid" recordVideo --codec=h264 --force "preview/$slug.mp4" &
+              rec=$!
+              sleep 2
+            fi
+            (cd "preview/$slug" && maestro --device "$udid" test \
+              --format junit --output report.xml \
+              --test-output-dir debug \
+              "$GITHUB_WORKSPACE/.maestro/preview.yaml") || { STATUS=1; echo "::error::UI test failed on $name"; }
+            if [ -n "$rec" ]; then
+              kill -INT "$rec"
+              wait "$rec" || true
+            fi
+            xcrun simctl shutdown "$udid" || true
+          }
+
+          run_device "iPhone 16" com.apple.CoreSimulator.SimDeviceType.iPhone-16 iphone-16 1
+          run_device "iPhone SE" com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation iphone-se 0
+          run_device "iPhone 16 Pro Max" com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max iphone-16-pro-max 0
+          exit $STATUS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Protein.uz-preview
+          path: preview
+          retention-days: 30
