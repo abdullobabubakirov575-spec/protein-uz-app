@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Protein.uz · Live-тест на iPhone</title>
+<style>
+  :root {
+    --bg: #0c0c0c; --surface: #151515; --raised: #1c1c1e; --border: rgba(255,255,255,.08);
+    --text: #fff; --muted: rgba(235,235,245,.62); --faint: rgba(235,235,245,.36);
+    --accent: #96e04a; --danger: #ff5a5f; --warn: #ffb547;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; min-height: 100vh; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 28px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(12,12,12,.86); backdrop-filter: blur(14px); z-index: 2; }
+  .brand { font: 700 22px/1 "Oswald", "Bebas Neue", Impact, sans-serif; letter-spacing: .5px; }
+  .brand b { color: var(--accent); }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: var(--raised); border: 1px solid var(--border); font-weight: 600; font-size: 14px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 rgba(150,224,74,.6); animation: pulse 1.6s infinite; }
+  .dot.done { animation: none; }
+  .dot.fail { background: var(--danger); animation: none; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 10px rgba(150,224,74,0); } 100% { box-shadow: 0 0 0 0 rgba(150,224,74,0); } }
+  main { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; gap: 28px; padding: 28px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } header { padding: 14px 16px; } }
+  .stage-col { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .device-name { font-weight: 700; font-size: 18px; }
+  .device-name span { color: var(--faint); font-weight: 500; font-size: 14px; display: block; text-align: center; }
+  .phone { position: relative; width: 100%; max-width: 380px; aspect-ratio: 1179 / 2556; border-radius: 56px; padding: 12px; background: linear-gradient(145deg, #2a2a2c, #111); box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 0 0 2px #3a3a3c; }
+  .screen { width: 100%; height: 100%; border-radius: 44px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; }
+  .screen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .placeholder { color: var(--faint); text-align: center; padding: 24px; font-size: 14px; }
+  .placeholder .spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(150,224,74,.2); border-top-color: var(--accent); animation: spin 1s linear infinite; margin: 0 auto 14px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .fps { font-size: 12px; color: var(--faint); }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; padding: 20px; }
+  .panel h2 { font: 600 13px/1 -apple-system, sans-serif; letter-spacing: 1.2px; text-transform: uppercase; color: var(--faint); margin-bottom: 14px; }
+  .right { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .step { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-radius: 14px; background: var(--raised); color: var(--faint); font-weight: 600; font-size: 14px; border: 1px solid transparent; }
+  .step i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; background: rgba(255,255,255,.06); flex: none; }
+  .step.active { color: var(--text); border-color: rgba(150,224,74,.45); background: rgba(150,224,74,.08); }
+  .step.active i { background: var(--accent); color: #0c0c0c; animation: pulse 1.6s infinite; }
+  .step.done { color: var(--muted); }
+  .step.done i { background: rgba(150,224,74,.18); color: var(--accent); }
+  .step.fail { color: var(--danger); border-color: rgba(255,90,95,.4); }
+  .step.fail i { background: var(--danger); color: #0c0c0c; }
+  pre { background: #0a0a0a; border: 1px solid var(--border); border-radius: 14px; padding: 14px; height: 340px; overflow: auto; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #cfd3cb; white-space: pre-wrap; word-break: break-word; }
+  pre .ok { color: var(--accent); } pre .err { color: var(--danger); } pre .stage { color: #fff; font-weight: 700; }
+  .gallery-group { margin-bottom: 18px; }
+  .gallery-group h3 { font-size: 15px; margin-bottom: 10px; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+  .shot { cursor: zoom-in; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); background: #000; }
+  .shot img { width: 100%; display: block; aspect-ratio: 1179 / 2556; object-fit: cover; }
+  .shot div { font-size: 11px; color: var(--muted); padding: 6px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .empty { color: var(--faint); font-size: 14px; }
+  video { width: 100%; max-height: 640px; border-radius: 16px; background: #000; }
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.88); display: none; align-items: center; justify-content: center; z-index: 5; cursor: zoom-out; }
+  .lightbox img { max-height: 92vh; max-width: 92vw; border-radius: 28px; }
+  .lightbox.open { display: flex; }
+  .meta { color: var(--faint); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">PROTEIN<b>.UZ</b> · LIVE</div>
+  <div class="pill"><span class="dot" id="dot"></span><span id="status">Подключение…</span></div>
+  <div class="meta" id="elapsed"></div>
+</header>
+<main>
+  <section class="stage-col">
+    <div class="device-name" id="device">Симулятор<span>ожидание</span></div>
+    <div class="phone"><div class="screen" id="screen">
+      <div class="placeholder"><div class="spinner"></div><div id="placeholder-text">Симулятор появится после сборки приложения</div></div>
+    </div></div>
+    <div class="fps" id="fps"></div>
+  </section>
+  <section class="right">
+    <div class="panel"><h2>Этапы</h2><div class="steps" id="steps"></div></div>
+    <div class="panel" id="video-panel" hidden><h2>Видео прогона · iPhone 16</h2><video id="video" controls playsinline></video></div>
+    <div class="panel"><h2>Живой лог</h2><pre id="log"></pre></div>
+    <div class="panel"><h2>Скриншоты теста</h2><div id="gallery"><div class="empty">Появятся, когда тест начнёт проходить экраны</div></div></div>
+  </section>
+</main>
+<div class="lightbox" id="lightbox"><img alt="" /></div>
+<script>
+  const STAGES = [
+    ['setup', 'Подготовка'], ['deps', 'Зависимости'], ['prebuild', 'iOS-проект'], ['build', 'Сборка'],
+    ['iphone-16', 'iPhone 16'], ['iphone-se', 'iPhone SE'], ['iphone-16-pro-max', 'iPhone 16 Pro Max'], ['done', 'Готово'],
+  ];
+  const DEVICES = { 'iphone-16': 'iPhone 16', 'iphone-se': 'iPhone SE (3-го поколения)', 'iphone-16-pro-max': 'iPhone 16 Pro Max' };
+  const $ = (id) => document.getElementById(id);
+  let status = { stage: 'setup' };
+  let startedAt = null;
+  let frames = 0;
+  let screenReady = false;
+
+  function renderSteps() {
+    const idx = STAGES.findIndex(([key]) => key === status.stage);
+    const failed = new Set(status.failed || []);
+    $('steps').innerHTML = STAGES.map(([key, label], i) => {
+      let cls = i < idx ? 'done' : i === idx ? 'active' : '';
+      if (failed.has(key)) cls = 'fail';
+      if (status.stage === 'done' && key === 'done') cls = 'done';
+      const icon = cls === 'fail' ? '✕' : cls === 'done' ? '✓' : i + 1;
+      return `<div class="step ${cls}"><i>${icon}</i>${label}</div>`;
+    }).join('');
+  }
+
+  async function pollStatus() {
+    try {
+      const res = await fetch('status.json?t=' + Date.now(), { cache: 'no-store' });
+      status = await res.json();
+      startedAt = startedAt || status.started;
+      const label = (STAGES.find(([k]) => k === status.stage) || [, status.stage])[1];
+      const finished = status.stage === 'done';
+      const failed = (status.failed || []).length > 0;
+      $('status').textContent = finished ? (failed ? 'Завершено с ошибками' : 'Все тесты пройдены') : label + (status.device ? ' · ' + status.device : '');
+      $('dot').className = 'dot' + (finished ? (failed ? ' fail' : ' done') : '');
+      const device = DEVICES[status.stage];
+      $('device').innerHTML = device ? `${device}<span>${status.detail || 'идёт тест'}</span>` : `Симулятор<span>${finished ? 'прогон завершён' : 'ожидание сборки'}</span>`;
+      renderSteps();
+      if (finished) showVideo();
+    } catch {}
+  }
+
+  function pollScreen() {
+    const img = new Image();
+    img.onload = () => {
+      const screen = $('screen');
+      if (!screenReady) { screen.innerHTML = ''; screen.appendChild(img); screenReady = true; }
+      else screen.replaceChild(img, screen.firstChild);
+      frames++;
+      setTimeout(pollScreen, 450);
+    };
+    img.onerror = () => setTimeout(pollScreen, 1500);
+    img.src = 'screen.jpg?t=' + Date.now();
+  }
+
+  const escapeHtml = (s) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  async function pollLog() {
+    try {
+      const res = await fetch('log.txt?t=' + Date.now(), { cache: 'no-store' });
+      const text = (await res.text()).replace(/\x1b\[[0-9;?]*[A-Za-z]/g, '');
+      const lines = text.split('\n').slice(-400).map((line) => {
+        const safe = escapeHtml(line);
+        if (/^▶/.test(line)) return `<span class="stage">${safe}</span>`;
+        if (/(FAILED|error|Error|✖|❌)/.test(line)) return `<span class="err">${safe}</span>`;
+        if (/(COMPLETED|Passed|✓|✔|Succeeded)/.test(line)) return `<span class="ok">${safe}</span>`;
+        return safe;
+      });
+      const pre = $('log');
+      const atBottom = pre.scrollHeight - pre.scrollTop - pre.clientHeight < 40;
+      pre.innerHTML = lines.join('\n');
+      if (atBottom) pre.scrollTop = pre.scrollHeight;
+    } catch {}
+  }
+
+  let shotsKey = '';
+  async function pollShots() {
+    try {
+      const res = await fetch('shots.json?t=' + Date.now(), { cache: 'no-store' });
+      const shots = await res.json();
+      const key = shots.join('|');
+      if (key === shotsKey || shots.length === 0) return;
+      shotsKey = key;
+      const groups = {};
+      for (const path of shots) {
+        const device = path.split('/')[1];
+        (groups[device] = groups[device] || []).push(path);
+      }
+      $('gallery').innerHTML = Object.entries(groups).map(([device, items]) => `
+        <div class="gallery-group"><h3>${DEVICES[device] || device}</h3><div class="gallery">
+          ${items.map((p) => `<div class="shot" data-src="${p}"><img loading="lazy" src="${p}" alt="" /><div>${p.split('/').pop().replace('.png', '')}</div></div>`).join('')}
+        </div></div>`).join('');
+    } catch {}
+  }
+
+  let videoShown = false;
+  async function showVideo() {
+    if (videoShown) return;
+    const res = await fetch('preview/iphone-16.mp4', { method: 'HEAD' }).catch(() => null);
+    if (!res || !res.ok) return;
+    videoShown = true;
+    $('video').src = 'preview/iphone-16.mp4';
+    $('video-panel').hidden = false;
+  }
+
+  document.addEventListener('click', (event) => {
+    const shot = event.target.closest('.shot');
+    const box = $('lightbox');
+    if (shot) { box.querySelector('img').src = shot.dataset.src; box.classList.add('open'); }
+    else if (event.target.closest('#lightbox')) box.classList.remove('open');
+  });
+
+  setInterval(() => {
+    if (startedAt) {
+      const s = Math.max(0, Math.floor(Date.now() / 1000 - startedAt));
+      $('elapsed').textContent = `идёт ${Math.floor(s / 60)} мин ${String(s % 60).padStart(2, '0')} с`;
+    }
+    $('fps').textContent = screenReady ? `трансляция экрана · ${frames} кадров` : '';
+  }, 1000);
+
+  renderSteps();
+  pollStatus(); pollLog(); pollShots(); pollScreen();
+  setInterval(pollStatus, 1500);
+  setInterval(pollLog, 2000);
+  setInterval(pollShots, 3000);
+</script>
+</body>
+</html>
