@@ -10,14 +10,16 @@ name: Protein.uz — full purchase flow
       id: hero-cta
     timeout: 60000
 
-- tapOn: Profile
+- tapOn:
+    id: tab-profile
 - tapOn:
     id: lang-ru
 - assertVisible: Русский
 - waitForAnimationToEnd
 - takeScreenshot: 01-profile-language
 
-- tapOn: Главная
+- tapOn:
+    id: tab-home
 - extendedWaitUntil:
     visible:
       id: product-.*
@@ -31,7 +33,8 @@ name: Protein.uz — full purchase flow
 - waitForAnimationToEnd
 - takeScreenshot: 04-home-brands
 
-- tapOn: Каталог
+- tapOn:
+    id: tab-catalog
 - extendedWaitUntil:
     visible:
       id: chip-all
