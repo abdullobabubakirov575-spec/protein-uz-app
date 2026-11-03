@@ -202,7 +202,7 @@ jobs:
             fi
             live_stage "$slug" "$name" "идёт тест"
             set -o pipefail
-            if ! (cd "preview/$slug" && maestro --device "$udid" test \
+            if ! (cd "preview/$slug" && perl -e 'alarm shift; exec @ARGV' 600 maestro --device "$udid" test \
                 --format junit --output report.xml \
                 --test-output-dir debug \
                 "$GITHUB_WORKSPACE/.maestro/preview.yaml" 2>&1 | tee -a "$LIVE/log.txt"); then
