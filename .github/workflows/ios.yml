@@ -231,7 +231,7 @@ jobs:
           retention-days: 30
 
       - name: Keep live page open for a few minutes
-        if: always()
+        if: success() || failure()
         run: |
           source .github/live/lib.sh
           live_stage done
